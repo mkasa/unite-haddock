@@ -33,6 +33,30 @@ function! s:kind.action_table.browse_local.func(candidates)
   endfor
 endfunction
 
+let s:kind.action_table.browse_local_foreground = {
+      \ 'description': 'open local haddock (foreground)',
+      \ 'is_selectable': 1,
+      \ }
+function! s:kind.action_table.browse_local_foreground.func(candidates)
+  for l:candidate in a:candidates
+    let l:mod = l:candidate.action__haddock_module
+    if empty(l:mod)
+      call unite#util#print_error(printf("No module is defined for '%s'", get(l:candidate, 'abbr', l:candidate.word)))
+      continue
+    endif
+    let l:pkg = s:find_pkg(l:mod)
+    let l:output = unite#haddock#ghc_pkg('field ' . l:pkg . ' haddock-html')
+    let l:dir = matchstr(substitute(l:output, '\n', ' ', 'g'), 'haddock-html: \zs\S\+\ze')
+    let l:path = printf('%s/%s.html', l:dir, substitute(l:mod, '\.', '-', 'g'))
+    if filereadable(l:path)
+      let l:path .= get(l:candidate, 'action__haddock_fragment', '')
+      call s:browse_foreground(l:candidate, 'file://' . l:path)
+    else
+      call unite#util#print_error(printf("documentation for '%s' (%s) does not exist", l:mod, l:pkg))
+    endif
+  endfor
+endfunction
+
 let s:kind.action_table.browse_remote = {
       \ 'description': 'open remote haddock (Hackage)',
       \ 'is_selectable': 1,
@@ -74,5 +98,13 @@ function! s:browse(candidate, uri)
     call unite#util#system(printf('%s %s &', g:unite_source_haddock_browser, shellescape(a:uri)))
   else
     call unite#take_action('start', extend(deepcopy(a:candidate), { 'action__path': a:uri }))
+  endif
+endfunction
+
+function! s:browse_foreground(candidate, uri)
+  if exists('g:unite_source_haddock_foreground_browser')
+    :exe "!" . printf('%s %s', g:unite_source_haddock_foreground_browser, shellescape(a:uri))
+  else
+    call unite#take_action('open', extend(deepcopy(a:candidate), { 'action__path': a:uri }))
   endif
 endfunction
