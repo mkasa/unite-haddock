@@ -52,7 +52,8 @@ function! s:kind.action_table.browse_remote.func(candidates)
       if l:name ==# 'ghc'
         let l:ghc_ver = l:ver
       else
-        let l:ghc_ver = unite#util#system('ghc --numeric-version')
+        " let l:ghc_ver = unite#util#system('ghc --numeric-version')
+        let l:ghc_ver = unite#util#system('stack exec -- ghc --numeric-version')
       endif
       let l:path = printf('http://www.haskell.org/ghc/docs/%s/html/libraries/%s-%s/%s.html', l:ghc_ver, l:name, l:ver, substitute(l:mod, '\.', '-', 'g'))
     else
