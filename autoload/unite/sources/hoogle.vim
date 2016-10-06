@@ -25,30 +25,37 @@ function! s:source.gather_candidates(args, context)
 endfunction
 
 function! s:make_candidate(input, index, line, exact)
-  let l:line = matchstr(a:line, '^.\+\ze -- \(\(http\|file\)://\)\?')
+  " echo a:line
+  let l:columns = split(a:line, ' -- ')
+  " echo l:columns
   let l:candidate = {
         \ 'word': a:input,
-        \ 'abbr': l:line,
+        \ 'abbr': a:line,
         \ 'source': 'hoogle',
         \ 'kind': 'haddock',
         \ 'action__haddock_module': '',
         \ 'action__haddock_fragment': '',
         \ 'action__haddock_index': a:index,
         \ 'action__haddock_exact': a:exact,
+        \ 'action__haddock_url': '',
         \ }
-  let l:m = matchlist(a:line, '^\(\S\+\)\s\+\(\S\+\)\(.*\)$')
+  if len(l:columns) < 3
+      return l:candidate
+  endif
+  let [l:typesig, l:matchtype, l:url] = l:columns[0 : 2]
+  " echo l:url
+  let l:m = matchlist(l:typesig, '^\(\S\+\)\s\+\(\S\+\)\(.*\)$')
   if empty(l:m)
     return l:candidate
   endif
+  " echo l:url
+  let l:candidate.action__haddock_url = l:url
+  " echo l:candidate
 
   let [l:mod, l:sym, l:rest] = l:m[1 : 3]
-  if l:mod ==# 'package'
-    return l:candidate
-  else
-    let l:candidate.action__haddock_module = l:mod
-    let l:candidate.action__haddock_fragment = matchstr(l:rest, '#.\+$')
-    return l:candidate
-  endif
+  let l:candidate.action__haddock_module = l:mod
+  let l:candidate.action__haddock_fragment = matchstr(l:sym, '#.\+$')
+  return l:candidate
 endfunction
 
 function! s:max_candidates()
@@ -84,7 +91,7 @@ endfunction
 function! s:remove_verbose(output, once)
   let l:output = substitute(a:output, '^.*= ANSWERS =\n', '', '')
   let l:output = substitute(l:output, '^No results found\n', '', '')
-  let l:output = substitute(l:output, '  -- \(\a\+\(+\a\+\)*\)*', '', a:once ? '' : 'g')
+  " let l:output = substitute(l:output, '  -- \(\a\+\(+\a\+\)*\)*', '', a:once ? '' : 'g')
   return l:output
 endfunction
 

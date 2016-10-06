@@ -1,8 +1,13 @@
 function! unite#sources#haddock#define()
-  if executable('ghc-pkg')
+  if executable('stack exec -- ghc-pkg')
     return s:source
   else
-    return []
+    if executable('ghc-pkg')
+      return s:source
+    else
+      echo "SOURCE WAS NOT THERE"
+      return []
+    endif
   endif
 endfunction
 
@@ -13,7 +18,9 @@ function! s:get_modules()
   for l:line in split(unite#haddock#ghc_pkg("field '*' exposed-modules"), '\n')
     let l:line = substitute(l:line, '^exposed-modules:', '', '')
     let l:line = substitute(l:line, '^\s\+', '', '')
-    call extend(l:mods, split(l:line, ' '))
+    if l:line !=# ''
+      call extend(l:mods, split(l:line, ' '))
+    endif
   endfor
   call sort(l:mods)
   return l:mods
